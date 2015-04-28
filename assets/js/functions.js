@@ -10,6 +10,8 @@ $el.main = $('#main');
 $el.fileBtn = $('#file-btn');
 $el.fileInput = $('#file-input');
 var stats;
+var textureImg;
+var spriteImg;
 
 dataCache.viewSize = {
     width: 640,
@@ -79,10 +81,20 @@ $el.fileInput.on('change', function(e){
             if(canvas.type === "error") {
                 console.log("Error loading image " + objUrl);
             } else {
-                var texture = new PIXI.Texture.fromCanvas(canvas);
-                var sprite = new PIXI.Sprite(texture);
-                window.test = sprite;
-                pixiCache.page1.addChild(sprite);
+                textureImg = new PIXI.Texture.fromCanvas(canvas);
+                spriteImg = new PIXI.Sprite(textureImg);
+                spriteImg.anchor.set(0.5);
+                var pW = dataCache.viewSize.width / 2;
+                var pH = dataCache.viewSize.height / 2;
+                spriteImg.position.set(pW, pH);
+                cache.angle = null;
+                cache.scale = 1;
+                cache.position = {
+                    x: spriteImg.position.x,
+                    y: spriteImg.position.y
+                };
+                pixiCache.page2.addChild(spriteImg);
+                nextPage();
             }
         },
         {
@@ -339,22 +351,55 @@ var onPageSwich = function onPageSwichFn(index){
         });
     }
 };
+//interact($el.main.get(0))
+//    .draggable({
+//        onmove: function (event) {
+//            if(cache.pageLock || cache.lock ){
+//                return false;
+//            }
+//            if (event.dx > 50) {
+//                nextPage();
+//                cache.lock = true;
+//            } else if (event.dx < -50) {
+//                prevPage();
+//                cache.lock = true;
+//            }
+//        },
+//        onend: function (evnet) {
+//            cache.lock = false;
+//        }
+//    });
+
 interact($el.main.get(0))
+    .gesturable({
+        onmove: function (event) {
+            if (Math.abs(event.da) > 0.5) {
+                cache.anglen = +(event.da / Math.PI).toFixed(2);
+                spriteImg.rotation += cache.anglen / 10;
+                cache.needRender = true;
+            }
+            if (Math.abs(event.ds) > 0.01) {
+                cache.scale += event.ds;
+                spriteImg.scale.set(1 + cache.scale);
+                cache.needRender = true;
+            }
+        }
+    })
     .draggable({
         onmove: function (event) {
-            if(cache.pageLock || cache.lock ){
-                return false;
-            }
-            if (event.dx > 50) {
-                nextPage();
-                cache.lock = true;
-            } else if (event.dx < -50) {
-                prevPage();
-                cache.lock = true;
+            if (!cache.isMove) {
+                if (Math.abs(event.dx) > 8 || Math.abs(event.dy) > 8) {
+                    cache.isMove = true;
+                }
+            } else {
+                cache.position.x += event.dx;
+                cache.position.y += event.dy;
+                spriteImg.position.set(cache.position.x, cache.position.y);
+                cache.needRender = true;
             }
         },
         onend: function (evnet) {
-            cache.lock = false;
+            cache.isMove = false;
         }
     });
 
